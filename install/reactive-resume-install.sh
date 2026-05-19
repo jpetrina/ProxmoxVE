@@ -32,9 +32,19 @@ corepack enable
 corepack prepare --activate
 export NODE_ENV="production"
 export CI="true"
-printf 'shamefully-hoist=true\n' >/opt/reactive-resume/.npmrc
 $STD pnpm install --frozen-lockfile
 $STD pnpm run build
+msg_info "Deploying Nitro Runtime Externals"
+RT_MODS="/opt/reactive-resume/packages/runtime-externals/node_modules"
+WEB_MODS="/opt/reactive-resume/apps/web/node_modules"
+for pkg in bcrypt sharp linkedom ioredis; do
+  [ -d "${RT_MODS}/${pkg}" ] && cp -rL "${RT_MODS}/${pkg}" "${WEB_MODS}/${pkg}"
+done
+if [ -d "${RT_MODS}/@aws-sdk" ]; then
+  mkdir -p "${WEB_MODS}/@aws-sdk"
+  cp -rL "${RT_MODS}/@aws-sdk/client-s3" "${WEB_MODS}/@aws-sdk/client-s3"
+fi
+msg_ok "Deployed Nitro Runtime Externals"
 mkdir -p /opt/reactive-resume/data
 msg_ok "Built Reactive Resume"
 
