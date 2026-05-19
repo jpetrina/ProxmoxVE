@@ -44,6 +44,7 @@ msg_ok "Built Reactive Resume"
 
 msg_info "Configuring Reactive Resume"
 AUTH_SECRET=$(openssl rand -hex 32)
+ENCRYPTION_SECRET=$(openssl rand -hex 32)
 
 cat <<EOF >/opt/reactive-resume/.env
 # Reactive Resume v5 Configuration
@@ -59,8 +60,8 @@ DATABASE_URL=postgresql://${PG_DB_USER}:${PG_DB_PASS}@localhost:5432/${PG_DB_NAM
 # Authentication Secret (do not change after initial setup)
 AUTH_SECRET=${AUTH_SECRET}
 
-# Printer (headless Chromium for PDF generation)
-PRINTER_ENDPOINT=http://127.0.0.1:9222
+# Encryption Secret (required for saved AI providers, do not change after initial setup)
+ENCRYPTION_SECRET=${ENCRYPTION_SECRET}
 
 # Storage: uses local filesystem (/opt/reactive-resume/data) when S3 is not configured
 # S3_ACCESS_KEY_ID=
@@ -82,6 +83,9 @@ PRINTER_ENDPOINT=http://127.0.0.1:9222
 # GITHUB_CLIENT_SECRET=
 # GOOGLE_CLIENT_ID=
 # GOOGLE_CLIENT_SECRET=
+
+# AI Agent (optional, required for the Agent workspace feature)
+# REDIS_URL=redis://localhost:6379
 
 # Feature Flags
 # FLAG_DISABLE_SIGNUPS=false

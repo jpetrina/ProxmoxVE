@@ -54,6 +54,11 @@ function update_script() {
     rm -rf /tmp/rr-runtime
     msg_ok "Deployed Nitro Runtime Externals"
     mv /opt/reactive-resume.env.bak /opt/reactive-resume/.env
+    # Inject ENCRYPTION_SECRET if missing (required for AI providers since v5.1.4)
+    if ! grep -q '^ENCRYPTION_SECRET=' /opt/reactive-resume/.env; then
+      ENCRYPTION_SECRET=$(openssl rand -hex 32)
+      echo "ENCRYPTION_SECRET=${ENCRYPTION_SECRET}" >> /opt/reactive-resume/.env
+    fi
     msg_ok "Updated Reactive Resume"
 
     msg_info "Updating Service"
