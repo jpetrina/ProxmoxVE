@@ -46,12 +46,9 @@ function update_script() {
     corepack prepare --activate
     export CI="true"
     export NODE_ENV="production"
+    printf 'shamefully-hoist=true\n' >/opt/reactive-resume/.npmrc
     $STD pnpm install --frozen-lockfile
     $STD pnpm run build
-    msg_info "Installing Nitro Runtime Externals"
-    cd /opt/reactive-resume/apps/web
-    $STD npm install --no-save --no-package-lock bcrypt sharp linkedom
-    cd /opt/reactive-resume
     mv /opt/reactive-resume.env.bak /opt/reactive-resume/.env
     msg_ok "Updated Reactive Resume"
 

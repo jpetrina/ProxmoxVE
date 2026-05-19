@@ -32,12 +32,9 @@ corepack enable
 corepack prepare --activate
 export NODE_ENV="production"
 export CI="true"
+printf 'shamefully-hoist=true\n' >/opt/reactive-resume/.npmrc
 $STD pnpm install --frozen-lockfile
 $STD pnpm run build
-msg_info "Installing Nitro Runtime Externals"
-cd /opt/reactive-resume/apps/web
-$STD npm install --no-save --no-package-lock bcrypt sharp linkedom
-cd /opt/reactive-resume
 mkdir -p /opt/reactive-resume/data
 msg_ok "Built Reactive Resume"
 
