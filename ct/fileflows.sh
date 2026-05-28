@@ -31,11 +31,22 @@ function update_script() {
     exit
   fi
 
-  update_available=$(curl -fsSL -X 'GET' "http://localhost:19200/api/status/update-available" -H 'accept: application/json' | jq .UpdateAvailable)
-  if [[ "${update_available}" == "true" ]]; then
+  RELEASE=$(curl -fsSL "https://api.github.com/repos/revenz/FileFlows/releases/latest" | jq -r '.tag_name' | sed 's/^v//')
+  CURRENT=$(cat /opt/fileflows/version 2>/dev/null | tr -d '[:space:]')
+
+  if systemctl is-enabled fileflows-node &>/dev/null && ! systemctl is-enabled fileflows &>/dev/null; then
+    # Node-only installation: no local server API available
+    if [[ -z "$RELEASE" ]]; then
+      msg_error "Failed to retrieve latest ${APP} version"
+      exit
+    fi
+    if [[ "$CURRENT" == "$RELEASE" ]]; then
+      msg_ok "No update required. ${APP} Node is already at v${CURRENT}"
+      exit
+    fi
     msg_info "Stopping Service"
-    systemctl stop fileflows*
-    msg_info "Stopped Service"
+    systemctl stop fileflows-node
+    msg_ok "Stopped Service"
 
     msg_info "Creating Backup"
     ls /opt/*.tar.gz &>/dev/null && rm -f /opt/*.tar.gz
@@ -46,11 +57,32 @@ function update_script() {
     fetch_and_deploy_from_url "https://fileflows.com/downloads/zip" "/opt/fileflows"
 
     msg_info "Starting Service"
-    systemctl start fileflows*
+    systemctl start fileflows-node
     msg_ok "Started Service"
-    msg_ok "Updated successfully!"
+    msg_ok "Updated successfully to v${RELEASE}!"
   else
-    msg_ok "No update required. ${APP} is already at latest version"
+    # Server installation: use the local API
+    update_available=$(curl -fsSL -X 'GET' "http://localhost:19200/api/status/update-available" -H 'accept: application/json' | jq .UpdateAvailable)
+    if [[ "${update_available}" == "true" ]]; then
+      msg_info "Stopping Service"
+      systemctl stop fileflows*
+      msg_ok "Stopped Service"
+
+      msg_info "Creating Backup"
+      ls /opt/*.tar.gz &>/dev/null && rm -f /opt/*.tar.gz
+      backup_filename="/opt/${APP}_backup_$(date +%F).tar.gz"
+      tar -czf "$backup_filename" -C /opt/fileflows Data
+      msg_ok "Backup Created"
+
+      fetch_and_deploy_from_url "https://fileflows.com/downloads/zip" "/opt/fileflows"
+
+      msg_info "Starting Service"
+      systemctl start fileflows*
+      msg_ok "Started Service"
+      msg_ok "Updated successfully to v${RELEASE}!"
+    else
+      msg_ok "No update required. ${APP} is already at latest version"
+    fi
   fi
 
   exit
