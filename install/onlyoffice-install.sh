@@ -20,29 +20,13 @@ $STD apt install -y \
 msg_ok "Installed Dependencies"
 
 PG_VERSION="16" setup_postgresql
-
-msg_info "Setup Database"
-DB_NAME=onlyoffice
-DB_USER=onlyoffice_user
-DB_PASS=$(openssl rand -base64 18 | tr -dc 'a-zA-Z0-9' | cut -c1-13)
-$STD sudo -u postgres psql -c "CREATE ROLE $DB_USER WITH LOGIN PASSWORD '$DB_PASS';"
-$STD sudo -u postgres psql -c "CREATE DATABASE $DB_NAME WITH OWNER $DB_USER ENCODING 'UTF8' TEMPLATE template0;"
-$STD sudo -u postgres psql -c "ALTER ROLE $DB_USER SET client_encoding TO 'utf8';"
-$STD sudo -u postgres psql -c "ALTER ROLE $DB_USER SET default_transaction_isolation TO 'read committed';"
-$STD sudo -u postgres psql -c "ALTER ROLE $DB_USER SET timezone TO 'UTC'"
-{
-  echo "ONLYOFFICE-Credentials"
-  echo "ONLYOFFICE Database User: $DB_USER"
-  echo "ONLYOFFICE Database Password: $DB_PASS"
-  echo "ONLYOFFICE Database Name: $DB_NAME"
-} >>~/onlyoffice.creds
-msg_ok "Set up Database"
+PG_DB_NAME="onlyoffice" PG_DB_USER="onlyoffice_user" setup_postgresql_db
 
 msg_info "Adding ONLYOFFICE GPG Key"
 GPG_TMP="/tmp/onlyoffice.gpg"
 KEY_URL="https://download.onlyoffice.com/GPG-KEY-ONLYOFFICE"
 TMP_KEY_CONTENT=$(mktemp)
-if curl -fsSL "$KEY_URL" -o "$TMP_KEY_CONTENT" && grep -q "BEGIN PGP PUBLIC KEY BLOCK" "$TMP_KEY_CONTENT"; then
+if curl_with_retry "$KEY_URL" "$TMP_KEY_CONTENT" && grep -q "BEGIN PGP PUBLIC KEY BLOCK" "$TMP_KEY_CONTENT"; then
   gpg --quiet --batch --yes --no-default-keyring --keyring "gnupg-ring:$GPG_TMP" --import "$TMP_KEY_CONTENT" >/dev/null 2>&1
   chmod 644 "$GPG_TMP"
   chown root:root "$GPG_TMP"
@@ -81,9 +65,6 @@ echo onlyoffice-documentserver onlyoffice/rabbitmq-pwd password $RMQ_PASS | debc
 echo onlyoffice-documentserver onlyoffice/jwt-enabled boolean true | debconf-set-selections
 echo onlyoffice-documentserver onlyoffice/jwt-secret password $JWT_SECRET | debconf-set-selections
 
-echo "RabbitMQ User: $RMQ_USER" >>~/onlyoffice.creds
-echo "RabbitMQ Password: $RMQ_PASS" >>~/onlyoffice.creds
-echo "JWT Secret: $JWT_SECRET" >>~/onlyoffice.creds
 {
   echo ""
   echo "ONLYOFFICE RabbitMQ Credentials"
