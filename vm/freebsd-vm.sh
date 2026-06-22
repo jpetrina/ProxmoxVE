@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Copyright (c) 2021-2026 community-scripts ORG
-# Author: michelroegl-brunner
+# Author: Jakov Petrina (jpetrina)
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
 
 source /dev/stdin <<<$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/api.func)
@@ -9,10 +9,10 @@ source /dev/stdin <<<$(curl -fsSL https://raw.githubusercontent.com/community-sc
 function header_info {
   clear
   cat <<"EOF"
- ______               ____ _____ ____ 
+ ______               ____ _____ ____
  / ____/_______  ___  / __ ) ___// __ \
  / /_  / ___/ _ \/ _ \/ __  \__ \/ / / /
- / __/ / /  /  __/  __/ /_/ /__/ / /_/ / 
+ / __/ / /  /  __/  __/ /_/ /__/ / /_/ /
 /_/   /_/   \___/\___/_____/____/_____/
 
 EOF
@@ -24,7 +24,7 @@ RANDOM_UUID="$(cat /proc/sys/kernel/random/uuid)"
 METHOD=""
 NSAPP="freebsd-vm"
 var_os="freebsd"
-var_version="14.2"
+var_version="15.1"
 #
 GEN_MAC=02:$(openssl rand -hex 5 | awk '{print toupper($0)}' | sed 's/\(..\)/\1:/g; s/.$//')
 
@@ -116,6 +116,75 @@ if [ -z "$TEMP_DIR" ]; then
   fi
 fi
 pushd $TEMP_DIR >/dev/null
+function send_line_to_vm() {
+  echo -e "${DGN}Sending line: ${YW}$1${CL}"
+  for ((i = 0; i < ${#1}; i++)); do
+    character=${1:i:1}
+    case $character in
+    " ") character="spc" ;;
+    "-") character="minus" ;;
+    "=") character="equal" ;;
+    ",") character="comma" ;;
+    ".") character="dot" ;;
+    "/") character="slash" ;;
+    "'") character="apostrophe" ;;
+    ";") character="semicolon" ;;
+    '\') character="backslash" ;;
+    '`') character="grave_accent" ;;
+    "[") character="bracket_left" ;;
+    "]") character="bracket_right" ;;
+    "_") character="shift-minus" ;;
+    "+") character="shift-equal" ;;
+    "?") character="shift-slash" ;;
+    "<") character="shift-comma" ;;
+    ">") character="shift-dot" ;;
+    '"') character="shift-apostrophe" ;;
+    ":") character="shift-semicolon" ;;
+    "|") character="shift-backslash" ;;
+    "~") character="shift-grave_accent" ;;
+    "{") character="shift-bracket_left" ;;
+    "}") character="shift-bracket_right" ;;
+    "A") character="shift-a" ;;
+    "B") character="shift-b" ;;
+    "C") character="shift-c" ;;
+    "D") character="shift-d" ;;
+    "E") character="shift-e" ;;
+    "F") character="shift-f" ;;
+    "G") character="shift-g" ;;
+    "H") character="shift-h" ;;
+    "I") character="shift-i" ;;
+    "J") character="shift-j" ;;
+    "K") character="shift-k" ;;
+    "L") character="shift-l" ;;
+    "M") character="shift-m" ;;
+    "N") character="shift-n" ;;
+    "O") character="shift-o" ;;
+    "P") character="shift-p" ;;
+    "Q") character="shift-q" ;;
+    "R") character="shift-r" ;;
+    "S") character="shift-s" ;;
+    "T") character="shift-t" ;;
+    "U") character="shift-u" ;;
+    "V") character="shift-v" ;;
+    "W") character="shift-w" ;;
+    "X") character="shift-x" ;;
+    "Y") character="shift-y" ;;
+    "Z") character="shift-z" ;;
+    "!") character="shift-1" ;;
+    "@") character="shift-2" ;;
+    "#") character="shift-3" ;;
+    '$') character="shift-4" ;;
+    "%") character="shift-5" ;;
+    "^") character="shift-6" ;;
+    "&") character="shift-7" ;;
+    "*") character="shift-8" ;;
+    "(") character="shift-9" ;;
+    ")") character="shift-0" ;;
+    esac
+    qm sendkey $VMID "$character"
+  done
+  qm sendkey $VMID ret
+}
 
 if (whiptail --backtitle "Proxmox VE Helper Scripts" --title "FreeBSD VM" --yesno "This will create a New FreeBSD VM. Proceed?" 10 58); then
   :
@@ -471,7 +540,6 @@ fi
 msg_ok "Using ${CL}${BL}$STORAGE${CL} ${GN}for Storage Location."
 msg_ok "Virtual Machine ID is ${CL}${BL}$VMID${CL}."
 msg_info "Retrieving the URL for the FreeBSD qcow2 disk image"
-# Use latest stable FreeBSD amd64 qcow2 VM image (generic, not UFS/ZFS)
 RELEASE_LIST="$(curl -s https://download.freebsd.org/releases/VM-IMAGES/ |
   grep -Eo '[0-9]+\.[0-9]+-RELEASE' |
   sort -Vr |
@@ -479,7 +547,7 @@ RELEASE_LIST="$(curl -s https://download.freebsd.org/releases/VM-IMAGES/ |
 URL=""
 FREEBSD_VER=""
 for ver in $RELEASE_LIST; do
-  candidate="https://download.freebsd.org/releases/VM-IMAGES/${ver}/amd64/Latest/FreeBSD-${ver}-amd64.qcow2.xz"
+  candidate="https://download.freebsd.org/releases/VM-IMAGES/${ver}/amd64/Latest/FreeBSD-${ver}-amd64-BASIC-CLOUDINIT-ufs.qcow2.xz"
   if curl -fsI "$candidate" >/dev/null 2>&1; then
     FREEBSD_VER="$ver"
     URL="$candidate"
@@ -487,7 +555,7 @@ for ver in $RELEASE_LIST; do
   fi
 done
 if [ -z "$URL" ]; then
-  msg_error "Could not find generic FreeBSD amd64 qcow2 image (non-UFS/ZFS)."
+  msg_error "Could not find FreeBSD amd64 qcow2 image."
   exit 115
 fi
 msg_ok "Download URL: ${CL}${BL}${URL}${CL}"
@@ -579,6 +647,7 @@ qm importdisk $VMID ${FILE} $STORAGE ${DISK_IMPORT:-} &>/dev/null
 qm set $VMID \
   -efidisk0 ${DISK0_REF}${FORMAT} \
   -scsi0 ${DISK1_REF},${DISK_CACHE}${THIN}size=2G \
+  -scsi1 ${STORAGE}:cloudinit \
   -boot order=scsi0 \
   -serial0 socket \
   -tags community-script >/dev/null
@@ -623,8 +692,12 @@ msg_ok "Bridge interfaces have been successfully added."
 msg_ok "Created a FreeBSD VM ${CL}${BL}(${HN})"
 msg_info "Starting FreeBSD VM"
 qm start $VMID
-sleep 5
-
+sleep 60
+send_line_to_vm "root"
+send_line_to_vm "pkg install -y py311-cloud-init"
+sleep 10
+send_line_to_vm "sysrc nuageinit_enable=NO"
+send_line_to_vm "service cloudinit enable"
 msg_ok "Started FreeBSD VM"
 
 msg_ok "Completed successfully!\n"
