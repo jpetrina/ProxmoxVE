@@ -45,7 +45,8 @@ sed -i "s|^SESSION_SECURE_COOKIE=.*|SESSION_SECURE_COOKIE=false|" .env
 grep -q "^SESSION_SECURE_COOKIE=" .env || echo "SESSION_SECURE_COOKIE=false" >>.env
 sed -i "s|^APP_FORCE_HTTPS=.*|APP_FORCE_HTTPS=false|" .env
 grep -q "^APP_FORCE_HTTPS=" .env || echo "APP_FORCE_HTTPS=false" >>.env
-$STD composer install --no-dev --optimize-autoloader
+$STD composer config --no-interaction preferred-install source
+$STD composer install --prefer-install=source --no-dev --optimize-autoloader
 php artisan self-host:generate-keys >/tmp/solidtime.keys 2>/dev/null
 while IFS= read -r line; do
   KEY="${line%%=*}"

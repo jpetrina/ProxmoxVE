@@ -45,7 +45,8 @@ function update_script() {
 
     msg_info "Updating Application"
     cd /opt/solidtime
-    COMPOSER_ALLOW_SUPERUSER=1 $STD composer install --no-dev --optimize-autoloader
+    COMPOSER_ALLOW_SUPERUSER=1 $STD composer config --no-interaction github-protocols https git ssh
+    $STD composer install --prefer-source --no-dev --optimize-autoloader
     $STD npm install
     $STD npm run build
     $STD php artisan migrate --force
