@@ -56,7 +56,10 @@ get_header() {
   mkdir -p "$(dirname "$local_header_path")"
 
   if [ ! -s "$local_header_path" ]; then
-    if ! curl -fsSL "$header_url" -o "$local_header_path"; then
+    local local_header_file="${PWD}/${app_type}/headers/${app_name}"
+    if [ -f "$local_header_file" ]; then
+      cp "$local_header_file" "$local_header_path"
+    else
       return 1
     fi
   fi

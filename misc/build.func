@@ -4400,13 +4400,13 @@ build_container() {
   fi
 
   # Build PCT_OPTIONS as string for export
-  local _func_url
+  local _func_file
   if [ "$var_os" == "alpine" ]; then
-    _func_url="https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/alpine-install.func"
+    _func_file="${PWD}/misc/alpine-install.func"
   else
-    _func_url="https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/install.func"
+    _func_file="${PWD}/misc/install.func"
   fi
-  export FUNCTIONS_FILE_PATH="$(curl -fsSL "$_func_url")"
+  export FUNCTIONS_FILE_PATH="$(cat "$_func_file")"
   if [[ -z "$FUNCTIONS_FILE_PATH" || ${#FUNCTIONS_FILE_PATH} -lt 100 ]]; then
     msg_error "Failed to download install functions from: $_func_url"
     exit 115
@@ -5167,7 +5167,7 @@ EOF
     export CONTAINER_INSTALLING=true
 
     local _install_script
-    _install_script="$(curl -fsSL "https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/install/${var_install}.sh")"
+    _install_script="$(cat ${PWD}/install/${var_install}.sh)"
     lxc-attach -n "$CTID" -- bash -c "$_install_script"
     local lxc_exit=$?
 
@@ -5593,7 +5593,7 @@ EOF
           set +Eeuo pipefail
           trap - ERR
           local _install_script
-          _install_script="$(curl -fsSL "https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/install/${var_install}.sh")"
+          _install_script="$(cat ${PWD}/install/${var_install}.sh)"
           lxc-attach -n "$CTID" -- bash -c "$_install_script"
           local apt_retry_exit=$?
           set -Eeuo pipefail
