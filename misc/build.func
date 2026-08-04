@@ -4785,10 +4785,21 @@ EOF
     fi
   }
 
+  # Configure net_bind_service capability for unprivileged containers
+  configure_net_bind() {
+    if [[ "${var_net_bind:-no}" != "yes" ]]; then
+      return 0
+    fi
+
+    echo "lxc.cap.keep: net_bind_service" >>"$LXC_CONFIG"
+    msg_ok "Net bind service capability configured"
+  }
+
   # Execute pre-start configurations
   configure_usb_passthrough
   configure_gpu_passthrough
   configure_additional_devices
+  configure_net_bind
 
   # Increase disk size for AMD ROCm runtime (~4GB extra needed)
   if [[ "${GPU_TYPE:-}" == "AMD" ]]; then
